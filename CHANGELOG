@@ -1,0 +1,133 @@
+Changes 0.7 -> 1.0
+Fri Aug 14 13:59:24 IST 2009  mik@stanford.edu
+  * Adapted tests to computing reduced Grobner bases.
+  * Fixed README import example.
+  * Added the Alternative operad as an example.
+  * Adapted tests to API changes.
+  * Removed non-used or badly written tests.
+  * Refactored reduceBasis to do full reductions, with list reversals, and to include a type signature.
+  * Pre-reduce input basis to operadicBuchberger.
+  * Clean compile with -Wall
+  * Examples all compile.
+  * Refactored orderings applied to the examples.
+  * Introduce non-symmetric Grobner basis computation. Refactor streamReduceBasis -> reduceBasis.
+  * Types and comments completed.
+  * Cleaning up monomial orderings, completing the list.
+  * Removed the PolyBag implementation.
+
+Thu Aug 13 14:26:33 IST 2009  mik@stanford.edu
+  * Pretty printing no longer hangs waiting on the next element in a list.
+  * allShuffles delegates to Dotsenko's shuffle permutations algorithm.
+  * Fixed basisElements to a more efficient version.
+  * Introduce reductions for the stable elements in the streamOperadicBuchberger pipeline
+  * Zero elements of the generating set no longer break reduceCompletely
+  * Sign mangling in reduceOE fixed.
+  * Operadic Buchberger with lazy evaluation in place.
+  * Extended traceing.
+  * Fixed bad ordering of the SCM embeddings.
+  * Fixed reconstructNode.
+  * Fixed equivalentOrders
+  * Safeguards to findBoundedSCM
+  * Refactored findRootedEmbedding
+
+Wed Aug 12 22:59:42 IST 2009  mik@stanford.edu
+  * Fixing reductions.
+
+Tue Aug 11 15:52:07 IST 2009  mik@stanford.edu
+  * S Polynomials now use the right embeddings for the SCMs.
+  * Improved algorithms for listing shuffle permutations and for constructing small common multiples.
+  * Additional PPrint instances.
+  * Mapping a function over all internal vertex labels.
+  * Division methods.
+
+Sun Aug  9 22:24:35 IST 2009  mik@stanford.edu
+  * Fixing too large findAllLCM issue.
+  The issue, as reported by Vladimir Dotsenko, was that the function findAllLCM would return many too many
+  LCMs for even the simplest examples.
+  
+  It turned out that the filters excluding too many LCMs were erroneously written - we expect the deep 
+  implementations, findSmallBoundedLCM, to return LCMs with the second argument, t, 
+  occurring with root shared with the root of the LCM, and the first argument, s, to occur higher up in 
+  the tree.
+  
+  If findAllLCM was called with both arguments identical, the filtering code would identify s dividing the
+  entire tree, missing that it occurs as a rooted divisor.
+
+  * Updated changelog
+
+
+
+Changes 0.6 -> 0.7
+Sun May  3 22:18:13 CEST 2009  mik@stanford.edu
+  * Stopped building test file - bug report from dons
+
+
+
+Changes 0.5 -> 0.6
+Thu Apr 30 10:25:29 CEST 2009  mik@stanford.edu
+  * ForestLex implemented
+
+Thu Apr 30 09:13:50 CEST 2009  mik@stanford.edu
+  * Path sequence comparisons have trees around if they need them.
+
+Thu Apr 30 09:12:30 CEST 2009  mik@stanford.edu
+  * Added flag controlling which Map data structure to use.
+
+Thu Apr 30 09:11:16 CEST 2009  mik@stanford.edu
+  * Adding and interleaving reductions in the Buchberger algorithm
+
+Wed Apr 29 11:41:03 CEST 2009  mik@stanford.edu
+  * Hackage rerelease - forgot to include one vital module.
+
+Wed Apr 29 11:40:48 CEST 2009  mik@stanford.edu
+  * Optimized order comparison
+
+Wed Apr 29 11:14:59 CEST 2009  mik@stanford.edu
+  * Changelog update
+
+Changes 0.4 -> 0.5
+Wed Apr 29 11:12:12 CEST 2009  mik@stanford.edu
+  * Preparing for v0.5
+
+Wed Apr 29 11:11:53 CEST 2009  mik@stanford.edu
+  * Reducing Groebner bases inline
+
+Wed Apr 29 11:11:29 CEST 2009  mik@stanford.edu
+  * Maximum degree could be run on empty lists
+
+Wed Apr 29 10:34:31 CEST 2009  mik@stanford.edu
+  * Flag choosable tracing.
+
+Wed Apr 29 10:32:53 CEST 2009  mik@stanford.edu
+  * Tweaking the map storage type to cache comparisons.
+
+    Note that this change induces incompatibility in the induced Show instances.
+    Hence, operad elements that were saved from 0.4 will not be easy to restore
+    to 0.5. 
+
+
+
+Changes 0.3 -> 0.4
+Tue Apr 28 23:13:15 CEST 2009  mik@stanford.edu
+  * Changelog update.
+
+Tue Apr 28 23:12:25 CEST 2009  mik@stanford.edu
+  * Automated testing with Cabal.
+
+Tue Apr 28 23:11:45 CEST 2009  mik@stanford.edu
+  * Noncritical minor mistake.
+
+Tue Apr 28 23:03:25 CEST 2009  mik@stanford.edu
+  * Preparing for release 0.4
+
+Tue Apr 28 22:52:05 CEST 2009  mik@stanford.edu
+  * Tree ordering tweaks.
+
+Tue Apr 28 22:51:16 CEST 2009  mik@stanford.edu
+  * Cabal standards adaptation
+
+Tue Apr 28 22:48:57 CEST 2009  mik@stanford.edu
+  * Percolate maximal degree through the Buchberger computation down to the LCM computation.
+
+Mon Apr 27 18:48:05 CEST 2009  mik@stanford.edu
+  * Adapting to HackageDB source code standards

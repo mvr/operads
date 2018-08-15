@@ -1,0 +1,45 @@
+This Haskell software package implements the Gröbner basis algorithm
+as described in Vladimir Dotsenko, Anton Khoroshkin: "Gröbner bases
+for operads" (arXiv:0812.4096).
+
+In order to use it, make sure you install ghc, cabal and haddock (see
+http://haskell.org for more details). These are available directly in
+most Linux and BSD distributions, and there are installers for MacOSX
+and Windows available on http://haskell.org.
+
+Once ghc is installed, install cabal-install, and then use that to
+install everything else needed. This tool will make the installation
+of everything else painless.
+
+To install the package, download the most recent tar ball
+Operads-n.n.tar.gz, and then perform the following steps:
+
+1) copy the tarball into an appropriate temporary directory
+2) in this temporary directory, execute 
+     tar -xzvf Operads-n.n.tar.gz
+3) enter the directory Operads-0.2
+4) run the following commands
+     ghc --make Setup.hs
+     ./Setup configure
+     ./Setup build
+     ./Setup install
+5) look through the example files
+     example.hs
+     altDual.hs
+     preLieBad.hs
+   to get a feeling for the syntax for interaction, and read the
+   documentation. 
+
+   You can get a computation system by running
+     ghci
+   and then inside ghci running
+     :m + Math.Operad
+
+   You can also write your own scripts for computation, and run them
+   as Haskell programs. This will allow more latitude in using
+   parallel processing and advanced computation techniques, but
+   exceeds the scope of this README.
+
+Pitfalls: 
+  * Make sure you run the program from somewhere else than the
+    temporary building directory, as this would load the wrong files.
