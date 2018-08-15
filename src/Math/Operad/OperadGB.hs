@@ -1,7 +1,8 @@
+{-# language CPP #-}
 -- Copyright 2009 Mikael Vejdemo Johansson <mik@stanford.edu>
 -- Released under a BSD license
 
--- | The module 'OperadGB' carries the implementations of the Buchberger algorithm and most utility functions 
+-- | The module 'OperadGB' carries the implementations of the Buchberger algorithm and most utility functions
 -- related to this.
 
 module Math.Operad.OperadGB where
@@ -25,21 +26,22 @@ import Math.Operad.PPrint
 -- * Fundamental data types and instances
 
 -- | The number of internal vertices of a tree.
-operationDegree :: (Ord a, Show a) => DecoratedTree a -> Int
+operationDegree :: DecoratedTree a -> Int
 operationDegree (DTLeaf _) = 0
 operationDegree vertex = 1 + sum (map operationDegree (subTrees vertex))
 
 -- | A list of operation degrees occurring in the terms of the operad element
-operationDegrees :: (Ord a, Show a, TreeOrdering t, Num n) => OperadElement a n t -> [Int]
+operationDegrees :: (Ord a, TreeOrdering t) => OperadElement a n t -> [Int]
 operationDegrees op = foldMonomials (\(k,_) lst -> lst ++ [(operationDegree . dt $ k)]) op
 
 -- | The maximal operation degree of an operadic element
-maxOperationDegree :: (Ord a, Show a, TreeOrdering t, Num n) => OperadElement a n t -> Int
-maxOperationDegree element = if null op then 0 else maximum op where op = operationDegrees element
+maxOperationDegree :: (Ord a, TreeOrdering t) => OperadElement a n t -> Int
+maxOperationDegree element = if null op then 0 else maximum op
+  where op = operationDegrees element
 
 -- | Check that an element of a free operad is homogenous
-isHomogenous :: (Ord a, Show a, TreeOrdering t, Num n) => OperadElement a n t -> Bool
-isHomogenous m = let 
+isHomogenous :: (Ord a, Show a, TreeOrdering t, Eq n, Num n) => OperadElement a n t -> Bool
+isHomogenous m = let
     trees = getTrees m
 --    equalityCheck :: OrderedTree a t -> OrderedTree a t -> Bool
     equalityCheck s t = arityDegree (dt s) == arityDegree (dt t) &&
@@ -53,15 +55,15 @@ isHomogenous m = let
 -- | Composition in the shuffle operad
 shuffleCompose :: (Ord a, Show a) => Int -> Shuffle -> DecoratedTree a -> DecoratedTree a -> DecoratedTree a
 shuffleCompose i sh s t | not (isPermutation sh) = error "shuffleCompose: sh needs to be a permutation\n"
-                        | (nLeaves s) + (nLeaves t) - 1 /= length sh = 
+                        | (nLeaves s) + (nLeaves t) - 1 /= length sh =
                             error $ "Permutation permutes the wrong number of things:" ++ show i ++ " " ++ show sh ++ " " ++ show s ++ " " ++ show t ++ "\n"
-                        | not (isShuffleIPQ sh i (nLeaves t-1)) = 
-                            error $ "Need a correct pointed shuffle permutation!\n" ++ 
-                                  show sh ++ " is not in Sh" ++ show i ++ 
+                        | not (isShuffleIPQ sh i (nLeaves t-1)) =
+                            error $ "Need a correct pointed shuffle permutation!\n" ++
+                                  show sh ++ " is not in Sh" ++ show i ++
                                            "(" ++ show (nLeaves t-1) ++ "," ++ show (nLeaves s-i) ++ ")\n"
                         | otherwise = symmetricCompose i sh s t
 
--- | Composition in the non-symmetric operad. We compose s o_i t. 
+-- | Composition in the non-symmetric operad. We compose s o_i t.
 nsCompose :: (Ord a, Show a) => Int -> DecoratedTree a -> DecoratedTree a -> DecoratedTree a
 nsCompose i s t = if i-1 > nLeaves s then error "Composition point too large"
                   else let
@@ -71,8 +73,8 @@ nsCompose i s t = if i-1 > nLeaves s then error "Composition point too large"
                       trees = map DTLeaf [1..nLeaves s]
                       newTrees = take (idx-1) trees ++ [t] ++ drop idx trees
                  in
-                   if length newTrees /= nLeaves s then error "Shouldn't happen" 
-                   else 
+                   if length newTrees /= nLeaves s then error "Shouldn't happen"
+                   else
                      nsComposeAll s newTrees
 
 -- | Composition in the symmetric operad
@@ -81,37 +83,37 @@ symmetricCompose i sh s t = if not (isPermutation sh) then error "symmetricCompo
                             else if (nLeaves s) + (nLeaves t) - 1 /= length sh then error "Permutation permutes the wrong number of things.\n"
                             else fmap ((sh!!) . (subtract 1)) $  nsCompose i s t
 
--- | Non-symmetric composition in the g(s;t1,...,tk) style. 
+-- | Non-symmetric composition in the g(s;t1,...,tk) style.
 nsComposeAll :: (Ord a, Show a) => DecoratedTree a -> [DecoratedTree a] -> DecoratedTree a
 nsComposeAll s trees = if nLeaves s /= length trees then error "NS: Need as many trees as leaves\n"
                         else if length trees == 0 then s
-                        else let 
+                        else let
                             treesArities = map nLeaves trees
                             packedTrees = map rePackLabels trees
                             offSets = (0:) $ scanl1 (+) treesArities
                             newTrees = zipWith (\t n -> fmap (+n) t) packedTrees offSets
                           in
                             rePackLabels $ glueTrees $ fmap ((newTrees!!) . (subtract 1)) $ rePackLabels s
-                        
+
 -- | Verification for a shuffle used for the g(s;t1,..,tk) style composition in the shuffle operad.
 checkShuffleAll :: Shuffle -> [Int] -> Bool
 checkShuffleAll sh blockL = let
       checkOrders :: Shuffle -> [Int] -> Bool
       checkOrders [] _ = True
       checkOrders _ [] = True
-      checkOrders restSh restBlock = (isSorted (take (head restBlock) restSh)) && 
-                                     (length restSh <= head restBlock || 
+      checkOrders restSh restBlock = (isSorted (take (head restBlock) restSh)) &&
+                                     (length restSh <= head restBlock ||
                                       (head restSh) < (head (drop (head restBlock) restSh))) &&
                                      checkOrders (drop (head restBlock) restSh) (tail restBlock)
     in
       sum blockL == length sh &&
       checkOrders sh blockL
-                            
--- | Sanity check for permutations. 
+
+-- | Sanity check for permutations.
 isPermutation :: Shuffle -> Bool
 isPermutation sh = and ((zipWith (==) [1..]) (sort sh))
 
--- | Shuffle composition in the g(s;t1,...,tk) style. 
+-- | Shuffle composition in the g(s;t1,...,tk) style.
 shuffleComposeAll :: (Ord a, Show a) => Shuffle -> DecoratedTree a -> [DecoratedTree a] -> DecoratedTree a
 shuffleComposeAll sh s trees = if nLeaves s /= length trees then error "Shuffle: Need as many trees as leaves\n"
                                else if sum (map nLeaves trees) /= length sh then error "Permutation permutes the wrong number of things.\n"
@@ -123,7 +125,7 @@ shuffleComposeAll sh s trees = if nLeaves s /= length trees then error "Shuffle:
    in
             fmap ((sh!!) . (subtract 1)) newTree
 
--- | Symmetric composition in the g(s;t1,...,tk) style. 
+-- | Symmetric composition in the g(s;t1,...,tk) style.
 symmetricComposeAll :: (Ord a, Show a) => Shuffle -> DecoratedTree a -> [DecoratedTree a] -> DecoratedTree a
 symmetricComposeAll sh s trees = if nLeaves s /= length trees then error "Symm: Need as many trees as leaves\n"
                                else if sum (map nLeaves trees) /= length sh then error "Permutation permutes the wrong number of things.\n"
@@ -145,7 +147,7 @@ symmetricComposeAll sh s trees = if nLeaves s /= length trees then error "Symm: 
 -- is guaranteed to restore the original leaf labels before the search.
 type Embedding a = DecoratedTree (Maybe a)
 
--- | Returns True if there is a subtree of @t@ isomorphic to @s@, respecting leaf orders. 
+-- | Returns True if there is a subtree of @t@ isomorphic to @s@, respecting leaf orders.
 divides :: (Ord a, Show a) => DecoratedTree a -> DecoratedTree a -> Bool
 divides s t = not . null $ findAllEmbeddings s t
 
@@ -160,17 +162,17 @@ dividesRooted s t = isJust $ findRootedEmbedding s t
 -- | Finds all ways to embed s into t respecting leaf orders.
 findAllEmbeddings :: (Ord a, Show a) => DecoratedTree a -> DecoratedTree a -> [Embedding a]
 findAllEmbeddings _ (DTLeaf _) = []
-findAllEmbeddings s t = let 
+findAllEmbeddings s t = let
     rootFind = maybeToList $ findRootedEmbedding s t
     subFinds = map (findAllEmbeddings s) (subTrees t)
     reGlue (i, ems) = let
-        glueTree tree = 
-            (DTVertex 
-             (Just $ vertexType t) 
+        glueTree tree =
+            (DTVertex
+             (Just $ vertexType t)
              (take (i-1) (map toJustTree $ subTrees t) ++ [tree] ++ drop i (map toJustTree $ subTrees t)))
       in map glueTree ems
   in rootFind ++ concatMap reGlue (zip [1..] subFinds)
-    
+
 -- | Helper function for 'findRootedEmbedding'.
 findUnsortedRootedEmbedding :: (Ord a, Show a) => DecoratedTree a -> DecoratedTree a -> Maybe (Embedding a)
 findUnsortedRootedEmbedding (DTLeaf _) t = Just (DTVertex Nothing [toJustTree t])
@@ -197,10 +199,10 @@ planarTree (DTLeaf _) = True
 planarTree (DTVertex _ subs) = all planarTree subs && isSorted (map minimalLeaf subs)
 
 -- | Returns True if s and t divide u, with different embeddings and t sharing root with u.
-dividesDifferent :: (Ord a, Show a) => 
+dividesDifferent :: (Ord a, Show a) =>
                     DecoratedTree a -> DecoratedTree a -> DecoratedTree a -> Bool
-dividesDifferent s t u = dividesRooted t u && 
-                         if s /= t 
+dividesDifferent s t u = dividesRooted t u &&
+                         if s /= t
                          then
                              divides s u
                          else
@@ -270,7 +272,7 @@ leafLabels u tl1 tl2 = let
   in leafLabelsAcc (nLeaves u) [(tl1, tl2, (replicate (nLeaves u) 0))]
 
 -- | Finds rooted small common multiples of two trees.
-findRootedSCM :: (Ord a, Show a) => 
+findRootedSCM :: (Ord a, Show a) =>
                  DecoratedTree a -> DecoratedTree a -> Maybe (DecoratedTree a)
 findRootedSCM s (DTLeaf _) = Just s
 findRootedSCM (DTLeaf _) t = Just t
@@ -288,11 +290,11 @@ findNonSymmetricSCM _ _ (DTLeaf _) = []
 findNonSymmetricSCM _ (DTLeaf _) _ = []
 findNonSymmetricSCM 0 _ _ = []
 findNonSymmetricSCM n s t = let
-      rootedSCMs = if (operationDegree s) > n || (operationDegree t) > n then [] 
+      rootedSCMs = if (operationDegree s) > n || (operationDegree t) > n then []
                    else maybeToList $ fmap flipEitherRoot $ findRootedSCM s t
       childSCMs = map (findNonSymmetricSCM (n-1) s) (subTrees t)
       zippedChildSCMs = zip [0..] childSCMs
-      zippedChildren = do 
+      zippedChildren = do
         (i, cSCMs) <- zippedChildSCMs
         child <- cSCMs
         return $ DTVertex (vertexType t) (applyAt (const child) i (subTrees t))
@@ -300,7 +302,7 @@ findNonSymmetricSCM n s t = let
 
 -- | Finds small common multiples of two trees bounding internal operation degree.
 findBoundedSCM :: (Ord a, Show a) => Int -> DecoratedTree a -> DecoratedTree a -> [DecoratedTree (Either a a)]
-findBoundedSCM n s t = do 
+findBoundedSCM n s t = do
   em <- findNonSymmetricSCM n (vertexMap Left s) (vertexMap Left t)
   guard $ isJust $ findFirstRight em
   let lot = leafOrders t em
@@ -323,22 +325,22 @@ findAllBoundedSCM :: (Ord a, Show a) =>
 findAllBoundedSCM n s t = nub $ (findBoundedSCM n s t)
 
 -- | Constructs embeddings for @s@ and @t@ in @SCM(s,t)@ and returns these.
-scmToEmbedding :: (Ord a, Show a) => 
+scmToEmbedding :: (Ord a, Show a) =>
                   DecoratedTree (Either a a) -> DecoratedTree a -> DecoratedTree a -> (Embedding a, Embedding a)
 scmToEmbedding scm s t = let
     lEm = findRootedEmbedding t (stripTree scm)
   --findHighEmbedding :: DecoratedTree (Either a a) -> Maybe (Embedding a)
     findHighEmbedding (DTLeaf _) = Nothing
-    findHighEmbedding (DTVertex (Left tp) ts) = Just $ 
-                                               DTVertex 
-                                               (Just tp) 
-                                               (zipWith (\ss tt -> if isJust ss then fromJust ss else tt) 
-                                                            (map findHighEmbedding ts) 
+    findHighEmbedding (DTVertex (Left tp) ts) = Just $
+                                               DTVertex
+                                               (Just tp)
+                                               (zipWith (\ss tt -> if isJust ss then fromJust ss else tt)
+                                                            (map findHighEmbedding ts)
                                                             (map (vertexMap Just) $ map stripTree ts))
     findHighEmbedding v@(DTVertex (Right _) _) = findRootedEmbedding s (stripTree v)
     rEm = findHighEmbedding scm
-  in if isNothing lEm || isNothing rEm 
-     then error ("Bad SCM in scmToEmbedding" 
+  in if isNothing lEm || isNothing rEm
+     then error ("Bad SCM in scmToEmbedding"
 #ifdef TRACE
                  ++ ": lEm is " ++ pp lEm ++ " and rEm is " ++ pp rEm ++ " for\n\t" ++ show s ++ "\n\t" ++ show t ++ "\n\t" ++ show scm
 #endif
@@ -359,7 +361,7 @@ fromJustTree (DTVertex (Just l) sts) = let
     if all isJust newsts then Just $ DTVertex l (map fromJust newsts)
     else Nothing
 
--- | Adds vertex type encapsulations. 
+-- | Adds vertex type encapsulations.
 toJustTree :: (Ord a, Show a) => DecoratedTree a -> DecoratedTree (Maybe a)
 toJustTree (DTLeaf k) = DTLeaf k
 toJustTree (DTVertex a sts) = DTVertex (Just a) (map toJustTree sts)
@@ -369,7 +371,7 @@ toJustTree (DTVertex a sts) = DTVertex (Just a) (map toJustTree sts)
 
 -- | Verifies that two integer sequences correspond to the same total ordering of the entries.
 equivalentOrders :: [Int] -> [Int] -> Bool
-equivalentOrders o1 o2 = if length o1 /= length o2 then False 
+equivalentOrders o1 o2 = if length o1 /= length o2 then False
                          else let
                              c1 = map snd . sort . zip o1 $ [(1::Int)..]
                              c2 = map snd . sort . zip o2 $ [(1::Int)..]
@@ -388,7 +390,7 @@ subTreeHasNothing (DTVertex (Just _) sts) = any subTreeHasNothing sts
 reconstructNode :: (Ord a, Show a) => DecoratedTree a -> Embedding a -> Maybe (DecoratedTree a)
 reconstructNode sub super = if isJust (vertexType super) then Nothing
                             else if (nLeaves sub) /= (vertexArity super) then Nothing
-                            else let 
+                            else let
                                 newSubTrees = map fromJustTree (subTrees super)
                            in
                              if any isNothing newSubTrees then Nothing
@@ -418,23 +420,23 @@ reconstructTree sub super = if isLeaf super then Nothing
 
 -- ** Groebner basis methods
 
--- | Applies the reconstruction map represented by em to all trees in the operad element op. Any operad element that 
+-- | Applies the reconstruction map represented by em to all trees in the operad element op. Any operad element that
 -- fails the reconstruction (by having the wrong total arity, for instance) will be silently dropped. We recommend
 -- you apply this function only to homogenous operad elements, but will not make that check.
-applyReconstruction :: (Ord a, Show a, TreeOrdering t, Num n) => Embedding a -> OperadElement a n t -> OperadElement a n t
+applyReconstruction :: (Ord a, Show a, TreeOrdering t, Eq n, Num n) => Embedding a -> OperadElement a n t -> OperadElement a n t
 applyReconstruction em m = let
       reconstructor (ordT, n) = do
         newDT <- reconstructTree (dt ordT) em
         return $ (ot newDT, n)
     in oe $ mapMaybe reconstructor (toList m)
 
--- | Finds all S polynomials for a given list of operad elements. 
-findAllSPolynomials :: (Ord a, Show a, TreeOrdering t, Fractional n) => 
+-- | Finds all S polynomials for a given list of operad elements.
+findAllSPolynomials :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) =>
                        [OperadElement a n t] -> [OperadElement a n t] -> [OperadElement a n t]
 findAllSPolynomials = findInitialSPolynomials maxBound
 
 -- | Finds all S polynomials for which the operationdegree stays bounded.
-findInitialSPolynomials :: (Ord a, Show a, TreeOrdering t, Fractional n) =>
+findInitialSPolynomials :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) =>
                            Int -> [OperadElement a n t] -> [OperadElement a n t] -> [OperadElement a n t]
 findInitialSPolynomials n oldGb newGb = nub . map (\o -> (1/leadingCoefficient o) .*. o) . filter (not . isZero) $ do
     g1 <- oldGb ++ newGb
@@ -442,10 +444,10 @@ findInitialSPolynomials n oldGb newGb = nub . map (\o -> (1/leadingCoefficient o
     findSPolynomials n g1 g2 ++ findSPolynomials n g2 g1
 
 -- | Finds all S polynomials for a given pair of operad elements, keeping a bound on operation degree.
-findSPolynomials :: (Ord a, Show a, TreeOrdering t, Fractional n) =>
+findSPolynomials :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) =>
                            Int -> OperadElement a n t -> OperadElement a n t -> [OperadElement a n t]
 findSPolynomials n g1 g2 = do
-    let 
+    let
         lmg1 = leadingMonomial g1
         lmg2 = leadingMonomial g2
         cf12 = (leadingCoefficient g1) / (leadingCoefficient g2)
@@ -454,7 +456,7 @@ findSPolynomials n g1 g2 = do
     return $ (applyReconstruction mg1 g1) - (cf12 .*. (applyReconstruction mg2 g2))
 
 -- | Non-symmetric version of 'findInitialSPolynomials'.
-findNSInitialSPolynomials :: (Ord a, Show a, TreeOrdering t, Fractional n) =>
+findNSInitialSPolynomials :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) =>
                            Int -> [OperadElement a n t] -> [OperadElement a n t] -> [OperadElement a n t]
 findNSInitialSPolynomials n oldGB newGB = nub . map (\o -> (1/leadingCoefficient o) .*. o) . filter (not . isZero) $ do
     g1 <- oldGB ++ newGB
@@ -462,10 +464,10 @@ findNSInitialSPolynomials n oldGB newGB = nub . map (\o -> (1/leadingCoefficient
     findNSSPolynomials n g1 g2 ++ findNSSPolynomials n g2 g1
 
 -- | Non-symmetric version of 'findSPolynomials'.
-findNSSPolynomials :: (Ord a, Show a, TreeOrdering t, Fractional n) =>
+findNSSPolynomials :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) =>
                            Int -> OperadElement a n t -> OperadElement a n t -> [OperadElement a n t]
 findNSSPolynomials n g1 g2 = do
-  let 
+  let
       lmg1 = leadingMonomial g1
       lmg2 = leadingMonomial g2
       cf12 = (leadingCoefficient g1) / (leadingCoefficient g2)
@@ -474,9 +476,9 @@ findNSSPolynomials n g1 g2 = do
   return $ (applyReconstruction mg1 g1) - (cf12 .*. (applyReconstruction mg2 g2))
 
 -- | Reduce g with respect to f and the embedding em: lt f -> lt g.
-reduceOE :: (Ord a, Show a, TreeOrdering t, Fractional n) => Embedding a -> OperadElement a n t -> OperadElement a n t -> OperadElement a n t
-reduceOE em f g = if not (divides (leadingMonomial f) (leadingMonomial g)) 
-                  then g 
+reduceOE :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) => Embedding a -> OperadElement a n t -> OperadElement a n t -> OperadElement a n t
+reduceOE em f g = if not (divides (leadingMonomial f) (leadingMonomial g))
+                  then g
                   else let
                       cgf = (leadingCoefficient g) / (leadingCoefficient f)
                       ret = g - (cgf .*. (applyReconstruction em f))
@@ -484,26 +486,26 @@ reduceOE em f g = if not (divides (leadingMonomial f) (leadingMonomial g))
                       ret
 
 -- | Reduce the leading monomial of @op@ with respect to @gb@.
-reduceInitial :: (Ord a, Show a, TreeOrdering t, Fractional n) => OperadElement a n t -> [OperadElement a n t] -> OperadElement a n t
+reduceInitial :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) => OperadElement a n t -> [OperadElement a n t] -> OperadElement a n t
 reduceInitial op [] = op
-reduceInitial op gb = if isZero op 
-                         then op 
+reduceInitial op gb = if isZero op
+                         then op
                          else let
                              divisorIdx = findIndex (flip divides (leadingMonomial op)) (map leadingMonomial gb)
                            in
                              if isNothing divisorIdx then op
-                             else 
-                               let 
-                                 g1 = gb!!(fromJust divisorIdx) 
+                             else
+                               let
+                                 g1 = gb!!(fromJust divisorIdx)
                                  em = head $ findAllEmbeddings (leadingMonomial g1) (leadingMonomial op)
                                  o1 = reduceOE em g1 op
-                                in 
+                                in
                                  reduceInitial o1 gb
 
 -- | Reduce all terms of @op@ with respect to @gbn@.
-reduceCompletely :: (Ord a, Show a, TreeOrdering t, Fractional n) => OperadElement a n t -> [OperadElement a n t] -> OperadElement a n t
+reduceCompletely :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) => OperadElement a n t -> [OperadElement a n t] -> OperadElement a n t
 reduceCompletely op [] = op
-reduceCompletely op gbn = 
+reduceCompletely op gbn =
     if isZero op then op
     else let
         gb = filter (not . isZero) gbn
@@ -514,58 +516,58 @@ reduceCompletely op gbn =
 
 -- | Perform one iteration of the Buchberger algorithm: generate all S-polynomials. Reduce all S-polynomials.
 -- Return anything that survived the reduction.
-stepOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Fractional n) => 
+stepOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) =>
                           [OperadElement a n t] -> [OperadElement a n t] -> [OperadElement a n t]
 stepOperadicBuchberger oldGb newGb = stepInitialOperadicBuchberger maxBound oldGb newGb
 
-stepNSOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Fractional n) => 
+stepNSOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) =>
                           [OperadElement a n t] -> [OperadElement a n t] -> [OperadElement a n t]
 stepNSOperadicBuchberger oldGB newGB = stepNSInitialOperadicBuchberger maxBound oldGB newGB
 
 -- | Perform one iteration of the Buchberger algorithm: generate all S-polynomials. Reduce all S-polynomials.
--- Return anything that survived the reduction. Keep the occurring operation degrees bounded. 
-stepInitialOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Fractional n) => 
+-- Return anything that survived the reduction. Keep the occurring operation degrees bounded.
+stepInitialOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) =>
                           Int -> [OperadElement a n t] -> [OperadElement a n t] -> [OperadElement a n t]
 stepInitialOperadicBuchberger maxD oldGb newGb =
-    nub $ 
-    filter (not . isZero) $ 
+    nub $
+    filter (not . isZero) $
     do
   spol <- findInitialSPolynomials maxD oldGb newGb
   guard $ maxOperationDegree spol <= maxD
-  let red = 
+  let red =
           reduceCompletely spol (oldGb ++ newGb)
   guard $ not . isZero $ red
   return red
 
 -- | Non-symmetric version of 'stepInitialOperadicBuchberger'.
-stepNSInitialOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Fractional n) => 
+stepNSInitialOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) =>
                           Int -> [OperadElement a n t] -> [OperadElement a n t] -> [OperadElement a n t]
 stepNSInitialOperadicBuchberger maxD oldGb newGb =
-    nub $ 
-    filter (not . isZero) $ 
+    nub $
+    filter (not . isZero) $
     do
   spol <- findNSInitialSPolynomials maxD oldGb newGb
   guard $ maxOperationDegree spol <= maxD
-  let red = 
+  let red =
           reduceCompletely spol (oldGb ++ newGb)
   guard $ not . isZero $ red
   return red
-                          
+
 -- | Perform the entire Buchberger algorithm for a given list of generators. Iteratively run the single iteration
 -- from 'stepOperadicBuchberger' until no new elements are generated.
 --
 -- DO NOTE: This is entirely possible to get stuck in an infinite loop. It is not difficult to write down generators
 -- such that the resulting Groebner basis is infinite. No checking is performed to catch this kind of condition.
-operadicBuchberger :: (Ord a, Show a, TreeOrdering t, Fractional n) => [OperadElement a n t] -> [OperadElement a n t]
+operadicBuchberger :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) => [OperadElement a n t] -> [OperadElement a n t]
 operadicBuchberger gb = nub $ streamOperadicBuchberger maxBound (reduceBasis [] gb)
 
 -- | Non-symmetric version of 'operadicBuchberger'.
-nsOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Fractional n) => [OperadElement a n t] -> [OperadElement a n t]
+nsOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) => [OperadElement a n t] -> [OperadElement a n t]
 nsOperadicBuchberger gb = nub $ streamNSOperadicBuchberger maxBound (reduceBasis [] gb)
 
 -- | Perform the entire Buchberger algorithm for a given list of generators. This iteratively runs single iterations
 -- from 'stepOperadicBuchberger' until no new elements are generated.
-streamOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Fractional n) =>
+streamOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) =>
                             Int -> [OperadElement a n t] -> [OperadElement a n t]
 streamOperadicBuchberger maxOD gb = let
     stepOnce _ [] [] = []
@@ -582,7 +584,7 @@ streamOperadicBuchberger maxOD gb = let
   in stepOnce [] [] gb
 
 -- | Non-symmetric version of 'streamOperadicBuchberger'.
-streamNSOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Fractional n) =>
+streamNSOperadicBuchberger :: (Ord a, Show a, TreeOrdering t, Eq n, Fractional n) =>
                             Int -> [OperadElement a n t] -> [OperadElement a n t]
 streamNSOperadicBuchberger maxOD gb = let
     stepOnce _ [] [] = []
@@ -598,7 +600,7 @@ streamNSOperadicBuchberger maxOD gb = let
   in stepOnce [] [] gb
 
 -- | Reduces a list of elements with respect to all other elements occurring in that same list.
-reduceBasis :: (Fractional n, TreeOrdering t, Show a, Ord a) =>
+reduceBasis :: (Eq n, Fractional n, TreeOrdering t, Show a, Ord a) =>
                [OperadElement a n t] -> [OperadElement a n t] -> [OperadElement a n t]
 reduceBasis ogb ngb = let
     reduceStep _ [] = []
@@ -613,7 +615,7 @@ reduceBasis ogb ngb = let
 -- ** Low degree bases
 
 -- | All trees composed from the given generators of operation degree n.
-allTrees :: (Ord a, Show a) => 
+allTrees :: (Ord a, Show a) =>
             [DecoratedTree a] -> Int -> [DecoratedTree a]
 allTrees _ 0 = []
 allTrees gens 1 = gens
@@ -628,10 +630,10 @@ allTrees gens k = nub $ do
 
 -- | Generate basis trees for a given Groebner basis for degree 'maxDegree'. 'divisors' is expected
 -- to contain the leading monomials in the Groebner basis.
-basisElements :: (Ord a, Show a) => 
+basisElements :: (Ord a, Show a) =>
                  [DecoratedTree a] -> [DecoratedTree a] -> Int -> [DecoratedTree a]
 basisElements generators divisors maxDegree = nub $
-    if maxDegree <= 0 then [] 
+    if maxDegree <= 0 then []
     else if maxDegree == 1 then generators
          else do
            b <- basisElements generators divisors (maxDegree-1)
@@ -645,6 +647,6 @@ basisElements generators divisors maxDegree = nub $
            return newB
 
 -- | Change the monomial order used for a specific tree. Use this in conjunction with mapMonomials
--- in order to change monomial order for an entire operad element. 
+-- in order to change monomial order for an entire operad element.
 changeOrder :: (Ord a, Show a, TreeOrdering s, TreeOrdering t) => t -> OrderedTree a s -> OrderedTree a t
 changeOrder o' (OT t _) = OT t o'
