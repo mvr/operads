@@ -1,3 +1,4 @@
+{-# language CPP #-}
 -- Copyright 2009 Mikael Vejdemo Johansson <mik@stanford.edu>
 -- Released under a BSD license
 
@@ -8,7 +9,7 @@ module Math.Operad.MapOperad where
 #ifndef USE_OLDMAP
 import qualified Math.Operad.Map as Map
 import Math.Operad.Map (Map)
-#else 
+#else
 import qualified Data.Map as Map
 import Data.Map (Map)
 #endif
@@ -22,12 +23,12 @@ type MonomialMap a t n = Map a t n
 type MonomialMap a t n = Map (OrderedTree a t) n
 #endif
 
--- | The type carrying operadic elements. An element in an operad is an associative array 
--- with keys being labeled trees and values being their coefficients. 
+-- | The type carrying operadic elements. An element in an operad is an associative array
+-- with keys being labeled trees and values being their coefficients.
 newtype (Ord a, Show a, TreeOrdering t) => OperadElement a n t = OE (MonomialMap a t n) deriving (Eq, Ord, Show, Read)
 
 instance (Ord a, Show a, Show n, TreeOrdering t) => PPrint (OperadElement a n t) where
-      pp (OE m) = if str == "" then "0" else str 
+      pp (OE m) = if str == "" then "0" else str
           where str = Map.foldWithKey (\k a result -> result ++ "\n+" ++ show a ++ "*" ++ pp k) "" m
 
 -- | Extracting the internal structure of the an element of the free operad.
@@ -53,7 +54,7 @@ mapMonomials :: (Show a, Ord a, Show b, Ord b, Num n, TreeOrdering s, TreeOrderi
 mapMonomials f (OE m) = OE $ Map.mapKeysWith (+) f m
 
 -- | Fold a function over all monomial trees in an operad element, collating the results in a list.
-foldMonomials :: (Show a, Ord a, Num n, TreeOrdering t) => 
+foldMonomials :: (Show a, Ord a, Num n, TreeOrdering t) =>
                  ((OrderedTree a t,n) -> [b] -> [b]) -> OperadElement a n t -> [b]
 foldMonomials f (OE m) = Map.foldWithKey (curry f) [] m
 
@@ -61,7 +62,7 @@ foldMonomials f (OE m) = Map.foldWithKey (curry f) [] m
 fromList :: (TreeOrdering t, Show a, Ord a, Num n) => [(OrderedTree a t,n)] -> OperadElement a n t
 fromList = OE . Map.filter (/=0) . Map.fromListWith (+)
 
--- | Given an operad element, extract a list of (tree, coefficient) pairs. 
+-- | Given an operad element, extract a list of (tree, coefficient) pairs.
 toList :: (TreeOrdering t, Show a, Ord a) => OperadElement a n t -> [(OrderedTree a t, n)]
 toList (OE m) = Map.toList m
 
@@ -81,10 +82,10 @@ oek dect n = oe $ [(OT dect ordering, n)]
 
 -- | Return the zero of the corresponding operad, with type appropriate to the given element.
 -- Can be given an appropriately casted undefined to construct a zero.
-zero :: (Ord a, Show a, TreeOrdering t, Num n) => OperadElement a n t 
+zero :: (Ord a, Show a, TreeOrdering t, Num n) => OperadElement a n t
 zero = oe [(ot $ leaf 1, 0)]
 
--- | Check whether an element is equal to 0. 
+-- | Check whether an element is equal to 0.
 isZero :: (Ord a, Show a, TreeOrdering t, Num n) => OperadElement a n t -> Bool
 isZero (OE m) = Map.null $ Map.filter (/=0) m
 
@@ -92,11 +93,11 @@ isZero (OE m) = Map.null $ Map.filter (/=0) m
 leadingOTerm :: (Ord a, Show a, TreeOrdering t, Num n) => OperadElement a n t -> OperadElement a n t
 leadingOTerm om = oe [leadingTerm om]
 
--- | Extract the leading term of an operad element. 
+-- | Extract the leading term of an operad element.
 leadingTerm :: (Ord a, Show a, TreeOrdering t, Num n) => OperadElement a n t -> (OrderedTree a t, n)
-leadingTerm (OE om) = fromMaybe (ot (leaf 0), 0) $ do 
+leadingTerm (OE om) = fromMaybe (ot (leaf 0), 0) $ do
                         ((m,c),_) <- Map.maxViewWithKey om
-                        return (m,c) 
+                        return (m,c)
 
 -- | Extract the ordered tree for the leading term of an operad element.
 leadingOMonomial :: (Ord a, Show a, TreeOrdering t, Num n) => OperadElement a n t -> OrderedTree a t

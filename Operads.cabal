@@ -1,20 +1,26 @@
-Name:                   Operads
-Version:                1.0
-Stability:              beta
-License:                BSD3
-License-file:           LICENSE
-Category:               Math
-Copyright:              © 2009 Mikael Vejdemo Johansson
-Author:                 Mikael Vejdemo Johansson
-Maintainer:             mik@stanford.edu
-Bug-reports:            mailto:mik@stanford.edu
-Homepage:               http://math.stanford.edu/~mik/operads
-Package-URL:            http://hackage.haskell.org/packages/archive/Operads/1.0/Operads-1.0.tar.gz
-Build-Type:             Simple
-Cabal-Version:          >=1.2
-Extra-source-files:     README CHANGELOG examples/preLieBad.hs examples/example.hs examples/altDual.hs examples/Alternative.hs OperadTest.hs
-Synopsis:               Groebner basis computation for Operads.
-Description:            
+name:                   Operads
+version:                1.0
+-- Stability:              beta
+license:                BSD3
+license-file:           LICENSE
+category:               Math
+copyright:              © 2009 Mikael Vejdemo Johansson
+author:                 Mikael Vejdemo Johansson
+-- Maintainer:             mik@stanford.edu
+-- Bug-reports:            mailto:mik@stanford.edu
+-- Homepage:               http://math.stanford.edu/~mik/operads
+build-type:             Simple
+cabal-version:          >= 1.8
+extra-source-files:     
+  README 
+  CHANGELOG 
+  examples/preLieBad.hs 
+  examples/example.hs 
+  examples/altDual.hs 
+  examples/Alternative.hs 
+  OperadTest.hs
+synopsis:               Groebner basis computation for Operads.
+description:            
   This is an implementation of the operadic Buchberger algorithm from Vladimir Dotsenko & 
   Anton Khoroshkin: Groebner bases for operads (arXiv:0812.4069).
   .
@@ -143,24 +149,34 @@ Description:
   into the system and reused later one; whereas using 'pp' will build a human readable string.
 
 
-Flag MapOperad
-     Description:       Use the Data.Map based storage for formal linear combinations.
-     Default:           False
+flag MapOperad
+  description:       Use the Data.Map based storage for formal linear combinations.
+  default:           False
 
-Flag UseOldMap
-     Description:       Don't use the Data.Map wrapper class Math.Operad.Map. This will slow down computation.
-     Default:           False
+flag UseOldMap
+  description:       Don't use the Data.Map wrapper class Math.Operad.Map. This will slow down computation.
+  default:           False
 
+library 
+  hs-source-dirs: src
+  build-depends: 
+    base >= 4 && < 5,
+    array,
+    mtl, 
+    containers
+                                       
+  exposed-modules:
+    Math.Operad
+    Math.Operad.OperadGB
+    Math.Operad.OrderedTree 
+    Math.Operad.PPrint 
+    Math.Operad.MapOperad 
+    Math.Operad.Map
 
+  ghc-options:            -Wall
+  ghc-prof-options:       -auto-all
 
-Library 
-        Build-Depends:          base <= 4, array, mtl, containers
-        Exposed-Modules:        Math.Operad
-        Other-Modules:          Math.Operad.OperadGB, Math.Operad.OrderedTree, Math.Operad.PPrint, Math.Operad.MapOperad Math.Operad.Map
-        ghc-options:            -Wall
-        ghc-prof-options:       -auto-all
-        Extensions:             CPP     
-        if flag(mapoperad)
-           CPP-Options:         -DUSE_MAPOPERAD
-        if flag(useoldmap)
-           CPP-Options:         -DUSE_OLDMAP
+  if flag(mapoperad)
+    cpp-options:         -DUSE_MAPOPERAD
+  if flag(useoldmap)
+    cpp-options:         -DUSE_OLDMAP
