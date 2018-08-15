@@ -10,7 +10,6 @@ module Math.Operad.OperadGB where
 import Prelude hiding (mapM, sequence)
 import Data.List (sort, sortBy, findIndex, nub, (\\))
 import Data.Ord
-import Data.Foldable (foldMap, Foldable)
 import Control.Monad hiding (mapM)
 import Data.Maybe
 
@@ -31,16 +30,16 @@ operationDegree (DTLeaf _) = 0
 operationDegree vertex = 1 + sum (map operationDegree (subTrees vertex))
 
 -- | A list of operation degrees occurring in the terms of the operad element
-operationDegrees :: (Ord a, TreeOrdering t) => OperadElement a n t -> [Int]
+operationDegrees :: OperadElement a n t -> [Int]
 operationDegrees op = foldMonomials (\(k,_) lst -> lst ++ [(operationDegree . dt $ k)]) op
 
 -- | The maximal operation degree of an operadic element
-maxOperationDegree :: (Ord a, TreeOrdering t) => OperadElement a n t -> Int
+maxOperationDegree :: OperadElement a n t -> Int
 maxOperationDegree element = if null op then 0 else maximum op
   where op = operationDegrees element
 
 -- | Check that an element of a free operad is homogenous
-isHomogenous :: (Ord a, Show a, TreeOrdering t, Eq n, Num n) => OperadElement a n t -> Bool
+isHomogenous :: OperadElement a n t -> Bool
 isHomogenous m = let
     trees = getTrees m
 --    equalityCheck :: OrderedTree a t -> OrderedTree a t -> Bool
@@ -53,18 +52,18 @@ isHomogenous m = let
 -- ** Operadic compositions
 
 -- | Composition in the shuffle operad
-shuffleCompose :: (Ord a, Show a) => Int -> Shuffle -> DecoratedTree a -> DecoratedTree a -> DecoratedTree a
+shuffleCompose :: Int -> Shuffle -> DecoratedTree a -> DecoratedTree a -> DecoratedTree a
 shuffleCompose i sh s t | not (isPermutation sh) = error "shuffleCompose: sh needs to be a permutation\n"
                         | (nLeaves s) + (nLeaves t) - 1 /= length sh =
-                            error $ "Permutation permutes the wrong number of things:" ++ show i ++ " " ++ show sh ++ " " ++ show s ++ " " ++ show t ++ "\n"
+                            error $ "Permutation permutes the wrong number of things:" -- ++ show i ++ " " ++ show sh ++ " " ++ show s ++ " " ++ show t ++ "\n"
                         | not (isShuffleIPQ sh i (nLeaves t-1)) =
-                            error $ "Need a correct pointed shuffle permutation!\n" ++
-                                  show sh ++ " is not in Sh" ++ show i ++
-                                           "(" ++ show (nLeaves t-1) ++ "," ++ show (nLeaves s-i) ++ ")\n"
+                            error $ "Need a correct pointed shuffle permutation!\n" -- ++
+                                  -- show sh ++ " is not in Sh" ++ show i ++
+                                  --          "(" ++ show (nLeaves t-1) ++ "," ++ show (nLeaves s-i) ++ ")\n"
                         | otherwise = symmetricCompose i sh s t
 
 -- | Composition in the non-symmetric operad. We compose s o_i t.
-nsCompose :: (Ord a, Show a) => Int -> DecoratedTree a -> DecoratedTree a -> DecoratedTree a
+nsCompose :: Int -> DecoratedTree a -> DecoratedTree a -> DecoratedTree a
 nsCompose i s t = if i-1 > nLeaves s then error "Composition point too large"
                   else let
                       pS = rePackLabels s
@@ -78,13 +77,13 @@ nsCompose i s t = if i-1 > nLeaves s then error "Composition point too large"
                      nsComposeAll s newTrees
 
 -- | Composition in the symmetric operad
-symmetricCompose :: (Ord a, Show a) => Int -> Shuffle -> DecoratedTree a -> DecoratedTree a -> DecoratedTree a
+symmetricCompose :: Int -> Shuffle -> DecoratedTree a -> DecoratedTree a -> DecoratedTree a
 symmetricCompose i sh s t = if not (isPermutation sh) then error "symmetricCompose: sh needs to be a permutation\n"
                             else if (nLeaves s) + (nLeaves t) - 1 /= length sh then error "Permutation permutes the wrong number of things.\n"
                             else fmap ((sh!!) . (subtract 1)) $  nsCompose i s t
 
 -- | Non-symmetric composition in the g(s;t1,...,tk) style.
-nsComposeAll :: (Ord a, Show a) => DecoratedTree a -> [DecoratedTree a] -> DecoratedTree a
+nsComposeAll :: DecoratedTree a -> [DecoratedTree a] -> DecoratedTree a
 nsComposeAll s trees = if nLeaves s /= length trees then error "NS: Need as many trees as leaves\n"
                         else if length trees == 0 then s
                         else let
@@ -114,7 +113,7 @@ isPermutation :: Shuffle -> Bool
 isPermutation sh = and ((zipWith (==) [1..]) (sort sh))
 
 -- | Shuffle composition in the g(s;t1,...,tk) style.
-shuffleComposeAll :: (Ord a, Show a) => Shuffle -> DecoratedTree a -> [DecoratedTree a] -> DecoratedTree a
+shuffleComposeAll :: Shuffle -> DecoratedTree a -> [DecoratedTree a] -> DecoratedTree a
 shuffleComposeAll sh s trees = if nLeaves s /= length trees then error "Shuffle: Need as many trees as leaves\n"
                                else if sum (map nLeaves trees) /= length sh then error "Permutation permutes the wrong number of things.\n"
                                else if not (isPermutation sh) then error "shuffleComposeAll: sh needs to be a permutation\n"
@@ -126,7 +125,7 @@ shuffleComposeAll sh s trees = if nLeaves s /= length trees then error "Shuffle:
             fmap ((sh!!) . (subtract 1)) newTree
 
 -- | Symmetric composition in the g(s;t1,...,tk) style.
-symmetricComposeAll :: (Ord a, Show a) => Shuffle -> DecoratedTree a -> [DecoratedTree a] -> DecoratedTree a
+symmetricComposeAll :: Shuffle -> DecoratedTree a -> [DecoratedTree a] -> DecoratedTree a
 symmetricComposeAll sh s trees = if nLeaves s /= length trees then error "Symm: Need as many trees as leaves\n"
                                else if sum (map nLeaves trees) /= length sh then error "Permutation permutes the wrong number of things.\n"
                                else if not (isPermutation sh) then error "sh needs to be a permutation"
@@ -221,16 +220,16 @@ stripEither (Left a) = a
 stripEither (Right a) = a
 
 -- | Applies @flipEither@ to the root vertex label of a tree.
-flipEitherRoot :: (Ord a, Show a) =>  PreDecoratedTree (Either a a) b -> PreDecoratedTree (Either a a) b
+flipEitherRoot :: PreDecoratedTree (Either a a) b -> PreDecoratedTree (Either a a) b
 flipEitherRoot l@(DTLeaf _) = l
 flipEitherRoot (DTVertex t ts) = DTVertex (flipEither t) ts
 
 -- | Projects vertex labels and applies leaf labels to a tree with internal labeling in @Either a a@.
-fuseTree :: (Ord a, Show a) => DecoratedTree (Either a a) -> [Int] -> DecoratedTree (Either a a)
+fuseTree :: DecoratedTree (Either a a) -> [Int] -> DecoratedTree (Either a a)
 fuseTree t ls = flip relabelLeaves ls $ t
 
 -- | Strips the @Either@ layer from internal vertex labels
-stripTree :: (Ord a, Show a) => DecoratedTree (Either a a) -> DecoratedTree a
+stripTree :: DecoratedTree (Either a a) -> DecoratedTree a
 stripTree = vertexMap stripEither
 
 -- | Acquires lists for resorting leaf labels according to the algorithm found for
@@ -252,8 +251,7 @@ maybeLast [] = Nothing
 maybeLast as = Just $ last as
 
 -- | Recursive algorithm to figure out correct leaf labels for a reconstructed small common multiple of two trees.
-leafLabels :: (Ord a, Show a) =>
-              DecoratedTree a -> [Int] -> [Int] -> [[Int]]
+leafLabels :: DecoratedTree a -> [Int] -> [Int] -> [[Int]]
 leafLabels u tl1 tl2 = let
     leafLabelsAcc :: Int -> [([Int], [Int], [Int])] -> [[Int]]
     leafLabelsAcc 0 accs = map (\(_,_,a) -> a) accs
@@ -348,7 +346,7 @@ scmToEmbedding scm s t = let
      else (fromJust lEm, fromJust rEm)
 
 -- | Relabels a tree in the right order, but with entries from [1..]
-rePackLabels :: (Ord a, Show a, Ord b) => PreDecoratedTree a b -> DecoratedTree a
+rePackLabels :: Ord b => PreDecoratedTree a b -> DecoratedTree a
 rePackLabels tree = fmap (fromJust . (flip lookup (zip (sort (foldMap (:[]) tree)) [1..]))) tree
 
 -- | Removes vertex type encapsulations.
@@ -648,5 +646,5 @@ basisElements generators divisors maxDegree = nub $
 
 -- | Change the monomial order used for a specific tree. Use this in conjunction with mapMonomials
 -- in order to change monomial order for an entire operad element.
-changeOrder :: (Ord a, Show a, TreeOrdering s, TreeOrdering t) => t -> OrderedTree a s -> OrderedTree a t
+changeOrder :: t -> OrderedTree a s -> OrderedTree a t
 changeOrder o' (OT t _) = OT t o'

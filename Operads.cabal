@@ -173,7 +173,7 @@ library
     Math.Operad.MapOperad 
     Math.Operad.Map
 
-  ghc-options:            -Wall
+  ghc-options:            -Wall -O2 -funbox-strict-fields -Wredundant-constraints
   ghc-prof-options:       -auto-all
 
   if flag(mapoperad)

@@ -90,11 +90,11 @@ instance (Ord a, TreeOrdering t) => Ord (OrderedTree a t) where
     compare (OT s o1) (OT t _) = treeCompare o1 s t
 
 -- | Building an ordered tree with 'PathLex' ordering from a decorated tree.
-ot :: (Ord a, TreeOrdering t) => DecoratedTree a -> OrderedTree a t
+ot :: TreeOrdering t => DecoratedTree a -> OrderedTree a t
 ot t = OT t ordering
 
 -- | Extracting the underlying tree from an ordered tree.
-dt :: (Ord a, TreeOrdering t) => OrderedTree a t -> DecoratedTree a
+dt :: OrderedTree a t -> DecoratedTree a
 dt (OT t _) = t
 
 
@@ -262,7 +262,7 @@ instance TreeOrdering RPermRPath where
 -- | Build a single corolla in a decorated tree. Takes a list for labels for the leaves, and derives
 -- the arity of the corolla from those. This, and the composition functions, form the preferred method
 -- to construct trees.
-corolla :: (Ord a, Show a) => a -> [Int] -> DecoratedTree a
+corolla :: a -> [Int] -> DecoratedTree a
 corolla label leaflabels =
     if null leaflabels
     then error "The operadic Buchberger, and many other algorithms, require the absence of 0-ary operations."
@@ -278,15 +278,15 @@ isLeaf (DTLeaf _) = True
 isLeaf _ = False
 
 -- | Check whether a given root is a corolla.
-isCorolla :: (Ord a, Show a) => DecoratedTree a -> Bool
+isCorolla :: DecoratedTree a -> Bool
 isCorolla = not . isLeaf
 
 -- | Change the leaves of a tree to take their values from a given list.
-relabelLeaves :: (Ord a, Show a) => DecoratedTree a -> [b] -> PreDecoratedTree a b
+relabelLeaves :: DecoratedTree a -> [b] -> PreDecoratedTree a b
 relabelLeaves tree newLabels = fst $ runState (mapM (\_ -> do; (x:xs) <- get; put xs; return x) tree) newLabels
 
 -- | Find the permutation the leaf labeling ordains for inputs.
-leafOrder :: (Ord a, Show a) => DecoratedTree a -> [Int]
+leafOrder :: DecoratedTree a -> [Int]
 leafOrder = foldMap (:[])
 
 
@@ -301,7 +301,7 @@ nLeaves (DTLeaf _) = 1
 nLeaves vertex = sum $ map nLeaves (subTrees vertex)
 
 -- | 'arityDegree' is one less than 'nLeaves'.
-arityDegree :: (Ord a, Show a) => DecoratedTree a -> Int
+arityDegree :: DecoratedTree a -> Int
 arityDegree t = nLeaves t - 1
 
 -- * Shuffles

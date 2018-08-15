@@ -14,7 +14,7 @@ import Control.Arrow
 
 data StoredTree a t = ST [[a]] [Int] (OrderedTree a t) deriving (Show, Read, Eq)
 
-sot :: (Ord a, TreeOrdering t) => OrderedTree a t -> StoredTree a t
+sot :: OrderedTree a t -> StoredTree a t
 sot pdt = let
     (path,perm) = orderedPathSequence (dt pdt)
   in ST path perm pdt
@@ -42,25 +42,23 @@ intersectionWith :: (Ord a, TreeOrdering t) =>
                     (u -> v -> w) -> Map a t u -> Map a t v -> Map a t w
 intersectionWith f (TM m) (TM n) = TM $ M.intersectionWith f m n
 
-keys :: (Ord a, TreeOrdering t) => Map a t v -> [OrderedTree a t]
+keys :: Map a t v -> [OrderedTree a t]
 keys (TM m) = P.map dot . M.keys $ m
 
-map :: (Ord a, TreeOrdering t) =>
-       (v -> w) -> Map a t v -> Map a t w
+map :: (v -> w) -> Map a t v -> Map a t w
 map f (TM m) = TM $ M.map f m
 
 mapKeysWith :: (Ord b, TreeOrdering s) =>
                (v -> v -> v) -> (OrderedTree a t -> OrderedTree b s) -> Map a t v -> Map b s v
 mapKeysWith c f (TM m) = TM $ M.mapKeysWith c (sot . f . dot) m
 
-maxViewWithKey :: (Ord a, TreeOrdering t) =>
-                  Map a t v -> Maybe ((OrderedTree a t, v), Map a t v)
+maxViewWithKey :: Map a t v -> Maybe ((OrderedTree a t, v), Map a t v)
 maxViewWithKey (TM m) = fmap (\((t,v),mmap) -> ((dot t, v), TM mmap)) . M.maxViewWithKey $ m
 
-null :: (Ord a, TreeOrdering t) => Map a t v -> Bool
+null :: Map a t v -> Bool
 null (TM m) = M.null m
 
-toList :: (Ord a, TreeOrdering t) => Map a t v -> [(OrderedTree a t, v)]
+toList :: Map a t v -> [(OrderedTree a t, v)]
 toList (TM m) = P.map (first dot) (M.toList m)
 
 unionWith :: (Ord a, TreeOrdering t) =>
