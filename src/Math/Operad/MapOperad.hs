@@ -36,7 +36,7 @@ extractMap :: OperadElement a n t -> MonomialMap a t n
 extractMap (OE m) = m
 
 -- | Arithmetic in the operad.
-instance (Ord a, Show a, Eq n, Num n, TreeOrdering t) => Num (OperadElement a n t) where
+instance (Ord a, Eq n, Num n, TreeOrdering t) => Num (OperadElement a n t) where
     (OE m) + (OE n) = OE $ Map.filter (/=0) $ Map.unionWith (+) m n
     negate on = (-1).*.on
     (OE m) * (OE n) = OE $ Map.filter (/=0) $ Map.intersectionWith (*) m n
