@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 -- Copyright 2009 Mikael Vejdemo Johansson <mik@stanford.edu>
 -- Released under a BSD license
 
@@ -23,8 +25,8 @@ dot :: StoredTree a t -> OrderedTree a t
 dot (ST _ _ pdt) = pdt
 
 instance (Ord a, TreeOrdering t) => Ord (StoredTree a t) where
-    compare (ST pathseq pathperm (OT t o)) (ST pathseq' pathperm' (OT s _)) =
-        comparePathSequence o t (pathseq,pathperm) s (pathseq', pathperm')
+    compare (ST pathseq pathperm (OT t)) (ST pathseq' pathperm' (OT s)) =
+        comparePathSequence @t t (pathseq,pathperm) s (pathseq', pathperm')
 
 data Map a t v = TM (M.Map (StoredTree a t) v) deriving (Show, Read, Eq, Ord)
 

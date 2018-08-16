@@ -73,11 +73,11 @@ oe = fromList
 
 -- | Construct a monomial in the free operad from a tree and a tree ordering. It's coefficient will be 1.
 oet :: (Ord a, TreeOrdering t, Eq n, Num n) => DecoratedTree a -> OperadElement a n t
-oet dect = oe $ [(OT dect ordering, 1)]
+oet dect = oe $ [(OT dect, 1)]
 
 -- | Construct a monomial in the free operad from a tree, a tree ordering and a coefficient.
 oek :: (Ord a, TreeOrdering t, Eq n, Num n) => DecoratedTree a -> n -> OperadElement a n t
-oek dect n = oe $ [(OT dect ordering, n)]
+oek dect n = oe $ [(OT dect, n)]
 
 -- | Return the zero of the corresponding operad, with type appropriate to the given element.
 -- Can be given an appropriately casted undefined to construct a zero.

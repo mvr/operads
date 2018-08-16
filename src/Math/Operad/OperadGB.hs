@@ -9,6 +9,7 @@ module Math.Operad.OperadGB where
 
 import Prelude hiding (mapM, sequence)
 import Data.Bifunctor
+import Data.Coerce
 import Data.List (sort, sortBy, findIndex, nub, (\\))
 import Data.Ord
 import Control.Monad hiding (mapM)
@@ -643,5 +644,5 @@ basisElements generators divisors maxDegree = nub $
 
 -- | Change the monomial order used for a specific tree. Use this in conjunction with mapMonomials
 -- in order to change monomial order for an entire operad element.
-changeOrder :: t -> OrderedTree a s -> OrderedTree a t
-changeOrder o' (OT t _) = OT t o'
+changeOrder :: OrderedTree a s -> OrderedTree a t
+changeOrder = coerce

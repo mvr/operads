@@ -1,3 +1,7 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor #-}
@@ -13,6 +17,7 @@ module Math.Operad.OrderedTree where
 
 import Prelude hiding (mapM)
 import Data.Bifunctor
+import Data.Coerce
 import Data.Foldable (Foldable, foldMap)
 import Data.Traversable
 import Data.List (sort, sortBy, intersperse, nub, findIndices)
@@ -70,23 +75,23 @@ type DecoratedTree a = PreDecoratedTree a Int
 -- trees. These are parametrized by types implementing the type class 'TreeOrdering',
 -- and this is a data type for a tree carrying its comparison type. We call these
 -- /ordered trees/.
-data OrderedTree a t = OT (DecoratedTree a) t deriving (Eq, Show, Read)
+newtype OrderedTree a t = OT (DecoratedTree a) deriving (Eq, Show, Read)
 
 instance (Show a, TreeOrdering t) => PPrint (OrderedTree a t) where
-    pp (OT dect _) = pp dect
+    pp (OT dect) = pp dect
 
 -- | Monomial ordering for trees. We require this to be a total well-ordering, compatible
 -- with the operadic compositions.
 instance (Ord a, TreeOrdering t) => Ord (OrderedTree a t) where
-    compare (OT s o1) (OT t _) = treeCompare o1 s t
+  compare (OT s) (OT t) = treeCompare @t s t
 
 -- | Building an ordered tree with 'PathLex' ordering from a decorated tree.
-ot :: TreeOrdering t => DecoratedTree a -> OrderedTree a t
-ot t = OT t ordering
+ot :: DecoratedTree a -> OrderedTree a t
+ot = coerce
 
 -- | Extracting the underlying tree from an ordered tree.
 dt :: OrderedTree a t -> DecoratedTree a
-dt (OT t _) = t
+dt = coerce
 
 
 
@@ -94,11 +99,10 @@ dt (OT t _) = t
 -- ** Monomial orderings on the free operad
 
 -- | The type class that parametrizes types implementing tree orderings.
-class (Eq t, Show t) => TreeOrdering t where
-    treeCompare :: Ord a => t -> DecoratedTree a -> DecoratedTree a -> Ordering
-    treeCompare o t1 t2 = comparePathSequence o t1 (orderedPathSequence t1) t2 (orderedPathSequence t2)
-    comparePathSequence :: Ord a => t -> DecoratedTree a -> ([[a]],Shuffle) -> DecoratedTree a -> ([[a]],Shuffle) -> Ordering
-    ordering :: t
+class TreeOrdering t where
+    treeCompare :: Ord a => DecoratedTree a -> DecoratedTree a -> Ordering
+    treeCompare t1 t2 = comparePathSequence @t t1 (orderedPathSequence t1) t2 (orderedPathSequence t2)
+    comparePathSequence :: Ord a => DecoratedTree a -> ([[a]],Shuffle) -> DecoratedTree a -> ([[a]],Shuffle) -> Ordering
 
 -- | Finding the path sequences. cf. Dotsenko-Khoroshkin.
 pathSequence :: DecoratedTree a -> ([[a]],Shuffle)
@@ -129,67 +133,63 @@ reverseOrder EQ = EQ
 
 data PathPerm = PathPerm deriving (Eq, Ord, Show, Read)
 instance TreeOrdering PathPerm where
-    treeCompare o s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
+    treeCompare s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
                         else if s == t then EQ
-                        else comparePathSequence o s (orderedPathSequence s) t (orderedPathSequence t)
-    comparePathSequence _ _ (paths,perms) _ (patht,permt) = let
+                        else comparePathSequence @PathPerm s (orderedPathSequence s) t (orderedPathSequence t)
+    comparePathSequence _ (paths,perms) _ (patht,permt) = let
                             clS = zipWith (comparing length) paths patht
                             coS = zipWith compare paths patht
                             cs = zipWith (\comp1 comp2 -> if comp1 == EQ then comp2 else comp1) clS coS
                          in
                            if any (/= EQ) cs then head (filter (/=EQ) cs)
                            else compare perms permt
-    ordering = PathPerm
 
 data RPathPerm = RPathPerm deriving (Eq, Ord, Show, Read)
 instance TreeOrdering RPathPerm where
-    treeCompare o s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
+    treeCompare s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
                         else if s == t then EQ
-                        else comparePathSequence o s (orderedPathSequence s) t (orderedPathSequence t)
-    comparePathSequence _ _ (paths,perms) _ (patht,permt) = let
+                        else comparePathSequence @RPathPerm s (orderedPathSequence s) t (orderedPathSequence t)
+    comparePathSequence _ (paths,perms) _ (patht,permt) = let
                             clS = zipWith (comparing length) paths patht
                             coS = zipWith compare paths patht
                             cS = zipWith (\comp1 comp2 -> if comp1 == EQ then comp2 else reverseOrder comp1) clS coS
                          in
                            if any (/= EQ) cS then head (filter (/=EQ) cS)
                            else compare perms permt
-    ordering = RPathPerm
 
 data PathRPerm = PathRPerm deriving (Eq, Ord, Show, Read)
 instance TreeOrdering PathRPerm where
-    treeCompare o s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
+    treeCompare s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
                         else if s == t then EQ
-                        else comparePathSequence o s (orderedPathSequence s) t (orderedPathSequence t)
-    comparePathSequence _ _ (paths,perms) _ (patht,permt) = let
+                        else comparePathSequence @PathRPerm s (orderedPathSequence s) t (orderedPathSequence t)
+    comparePathSequence _ (paths,perms) _ (patht,permt) = let
                             clS = zipWith (comparing length) paths patht
                             coS = zipWith compare paths patht
                             cs = zipWith (\comp1 comp2 -> if comp1 == EQ then comp2 else comp1) clS coS
                          in
                            if any (/= EQ) cs then head (filter (/=EQ) cs)
                            else reverseOrder $ compare perms permt
-    ordering = PathRPerm
 
 data RPathRPerm = RPathRPerm deriving (Eq, Ord, Show, Read)
 instance TreeOrdering RPathRPerm where
-    treeCompare o s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
+    treeCompare s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
                         else if s == t then EQ
-                        else comparePathSequence o s (orderedPathSequence s) t (orderedPathSequence t)
-    comparePathSequence _ _ (paths,perms) _ (patht,permt) = let
+                        else comparePathSequence @RPathRPerm s (orderedPathSequence s) t (orderedPathSequence t)
+    comparePathSequence _ (paths,perms) _ (patht,permt) = let
                             clS = zipWith (comparing length) paths patht
                             coS = zipWith compare paths patht
                             cS = zipWith (\comp1 comp2 -> if comp1 == EQ then comp2 else reverseOrder comp1) clS coS
                          in
                            if any (/= EQ) cS then head (filter (/=EQ) cS)
                            else reverseOrder $ compare perms permt
-    ordering = RPathRPerm
 
 
 data PermPath = PermPath deriving (Eq, Ord, Show, Read)
 instance TreeOrdering PermPath where
-    treeCompare o s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
+    treeCompare s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
                         else if s == t then EQ
-                        else comparePathSequence o s (orderedPathSequence s) t (orderedPathSequence t)
-    comparePathSequence _ _ (paths,perms) _ (patht,permt) = let
+                        else comparePathSequence @PermPath s (orderedPathSequence s) t (orderedPathSequence t)
+    comparePathSequence _ (paths,perms) _ (patht,permt) = let
                             clS = zipWith (comparing length) paths patht
                             coS = zipWith compare paths patht
                             cs = zipWith (\comp1 comp2 -> if comp1 == EQ then comp2 else comp1) clS coS
@@ -197,15 +197,14 @@ instance TreeOrdering PermPath where
                          in
                            if test1 /= EQ then test1
                            else if any (/= EQ) cs then head (filter (/=EQ) cs) else EQ
-    ordering = PermPath
 
 data PermRPath = PermRPath deriving (Eq, Ord, Show, Read)
 
 instance TreeOrdering PermRPath where
-    treeCompare o s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
+    treeCompare s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
                         else if s == t then EQ
-                        else comparePathSequence o s (orderedPathSequence s) t (orderedPathSequence t)
-    comparePathSequence _ _ (paths,perms) _ (patht,permt) = let
+                        else comparePathSequence @PermRPath s (orderedPathSequence s) t (orderedPathSequence t)
+    comparePathSequence _ (paths,perms) _ (patht,permt) = let
                             clS = zipWith (comparing length) paths patht
                             coS = zipWith compare paths patht
                             cS = zipWith (\comp1 comp2 -> if comp1 == EQ then comp2 else reverseOrder comp1) clS coS
@@ -213,14 +212,13 @@ instance TreeOrdering PermRPath where
                          in
                            if test1 /= EQ then test1
                            else if any (/= EQ) cS then head (filter (/=EQ) cS) else EQ
-    ordering = PermRPath
 
 data RPermPath = RPermPath deriving (Eq, Ord, Show, Read)
 instance TreeOrdering RPermPath where
-    treeCompare o s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
+    treeCompare s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
                         else if s == t then EQ
-                        else comparePathSequence o s (orderedPathSequence s) t (orderedPathSequence t)
-    comparePathSequence _ _ (paths,perms) _ (patht,permt) = let
+                        else comparePathSequence @RPermPath s (orderedPathSequence s) t (orderedPathSequence t)
+    comparePathSequence _ (paths,perms) _ (patht,permt) = let
                             clS = zipWith (comparing length) paths patht
                             coS = zipWith compare paths patht
                             cs = zipWith (\comp1 comp2 -> if comp1 == EQ then comp2 else comp1) clS coS
@@ -228,14 +226,13 @@ instance TreeOrdering RPermPath where
                          in
                            if test1 /= EQ then test1
                            else if any (/= EQ) cs then head (filter (/=EQ) cs) else EQ
-    ordering = RPermPath
 
 data RPermRPath = RPermRPath deriving (Eq, Ord, Show, Read)
 instance TreeOrdering RPermRPath where
-    treeCompare o s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
+    treeCompare s t = if (nLeaves s) /= (nLeaves t) then comparing nLeaves s t
                         else if s == t then EQ
-                        else comparePathSequence o s (orderedPathSequence s) t (orderedPathSequence t)
-    comparePathSequence _ _ (paths,perms) _ (patht,permt) = let
+                        else comparePathSequence @RPermRPath s (orderedPathSequence s) t (orderedPathSequence t)
+    comparePathSequence _ (paths,perms) _ (patht,permt) = let
                             clS = zipWith (comparing length) paths patht
                             coS = zipWith compare paths patht
                             cS = zipWith (\comp1 comp2 -> if comp1 == EQ then comp2 else reverseOrder comp1) clS coS
@@ -243,7 +240,6 @@ instance TreeOrdering RPermRPath where
                          in
                            if test1 /= EQ then test1
                            else if any (/= EQ) cS then head (filter (/=EQ) cS) else EQ
-    ordering = RPermRPath
 
 
 -- ** Utility functions on trees
