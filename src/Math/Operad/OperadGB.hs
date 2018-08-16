@@ -8,6 +8,7 @@
 module Math.Operad.OperadGB where
 
 import Prelude hiding (mapM, sequence)
+import Data.Bifunctor
 import Data.List (sort, sortBy, findIndex, nub, (\\))
 import Data.Ord
 import Control.Monad hiding (mapM)
@@ -229,7 +230,7 @@ fuseTree t ls = flip relabelLeaves ls $ t
 
 -- | Strips the @Either@ layer from internal vertex labels
 stripTree :: DecoratedTree (Either a a) -> DecoratedTree a
-stripTree = vertexMap stripEither
+stripTree = first stripEither
 
 -- | Acquires lists for resorting leaf labels according to the algorithm found for
 -- constructing small common multiples with minimal work.
@@ -300,7 +301,7 @@ findNonSymmetricSCM n s t = let
 -- | Finds small common multiples of two trees bounding internal operation degree.
 findBoundedSCM :: (Eq a) => Int -> DecoratedTree a -> DecoratedTree a -> [DecoratedTree (Either a a)]
 findBoundedSCM n s t = do
-  em <- findNonSymmetricSCM n (vertexMap Left s) (vertexMap Left t)
+  em <- findNonSymmetricSCM n (first Left s) (first Left t)
   guard $ isJust $ findFirstRight em
   let lot = leafOrders t em
       los = leafOrders s (fromJust $ findFirstRight em)
@@ -330,7 +331,7 @@ scmToEmbedding scm s t = let
                                                (Just tp)
                                                (zipWith (\ss tt -> if isJust ss then fromJust ss else tt)
                                                             (map findHighEmbedding ts)
-                                                            (map (vertexMap Just) $ map stripTree ts))
+                                                            (map (first Just) $ map stripTree ts))
     findHighEmbedding v@(DTVertex (Right _) _) = findRootedEmbedding s (stripTree v)
     rEm = findHighEmbedding scm
   in if isNothing lEm || isNothing rEm
@@ -465,7 +466,7 @@ findNSSPolynomials n g1 g2 = do
       lmg1 = leadingMonomial g1
       lmg2 = leadingMonomial g2
       cf12 = (leadingCoefficient g1) / (leadingCoefficient g2)
-  scm <- findNonSymmetricSCM n (vertexMap Left lmg1) (vertexMap Left lmg2)
+  scm <- findNonSymmetricSCM n (first Left lmg1) (first Left lmg2)
   let (mg2,mg1) = scmToEmbedding scm lmg1 lmg2
   return $ (applyReconstruction mg1 g1) - (cf12 .*. (applyReconstruction mg2 g2))
 

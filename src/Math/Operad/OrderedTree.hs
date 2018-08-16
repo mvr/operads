@@ -12,6 +12,7 @@
 module Math.Operad.OrderedTree where
 
 import Prelude hiding (mapM)
+import Data.Bifunctor
 import Data.Foldable (Foldable, foldMap)
 import Data.Traversable
 import Data.List (sort, sortBy, intersperse, nub, findIndices)
@@ -30,9 +31,13 @@ data PreDecoratedTree a b
   = DTLeaf !b |
     DTVertex {
       vertexType :: !a,
-      subTrees :: ![PreDecoratedTree a b]
+      subTrees :: [PreDecoratedTree a b]
     }
   deriving (Eq, Ord, Read, Show, Functor, Foldable, Traversable)
+
+instance Bifunctor PreDecoratedTree where
+  bimap _ r (DTLeaf b) = DTLeaf (r b)
+  bimap l r (DTVertex a children) = DTVertex (l a) (fmap (bimap l r) children)
 
 -- | The arity of a corolla
 vertexArity :: PreDecoratedTree a b -> Int
@@ -41,11 +46,6 @@ vertexArity t = length (subTrees t)
 instance (Show a, Show b) => PPrint (PreDecoratedTree a b) where
     pp (DTLeaf x) = show x
     pp (DTVertex t ts) = "m" ++ show t ++ "(" ++ concat (intersperse "," (map pp ts)) ++ ")"
-
--- | Apply a function @f@ to all the internal vertex labels of a PreDecoratedTree.
-vertexMap :: (a -> b) -> PreDecoratedTree a c -> PreDecoratedTree b c
-vertexMap _ (DTLeaf i) = DTLeaf i
-vertexMap f (DTVertex t ts) = DTVertex (f t) (map (vertexMap f) ts)
 
 -- | If a tree has trees as labels for its leaves, we can replace the leaves with the roots of
 -- those label trees. Thus we may glue together trees, as required by the compositions.
