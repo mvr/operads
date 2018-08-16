@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveFunctor #-}
 -- Copyright 2009 Mikael Vejdemo Johansson <mik@stanford.edu>
 -- Released under a BSD license
 
@@ -29,23 +32,11 @@ data PreDecoratedTree a b
       vertexType :: !a,
       subTrees :: ![PreDecoratedTree a b]
     }
-  deriving (Eq, Ord, Read, Show)
+  deriving (Eq, Ord, Read, Show, Functor, Foldable, Traversable)
 
 -- | The arity of a corolla
 vertexArity :: PreDecoratedTree a b -> Int
 vertexArity t = length (subTrees t)
-
-instance Functor (PreDecoratedTree a) where
-    fmap f (DTLeaf b) = DTLeaf (f b)
-    fmap f (DTVertex t ts) = DTVertex t (map (fmap f) ts)
-
-instance Foldable (PreDecoratedTree a) where
-    foldMap f (DTLeaf b) = f b
-    foldMap f (DTVertex _ ts) = mconcat (map (foldMap f) ts)
-
-instance Traversable (PreDecoratedTree a) where
-    traverse f (DTLeaf b) = DTLeaf <$> f b
-    traverse f (DTVertex t ts) = DTVertex t <$> traverse (traverse f) ts
 
 instance (Show a, Show b) => PPrint (PreDecoratedTree a b) where
     pp (DTLeaf x) = show x
